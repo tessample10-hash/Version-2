@@ -2,60 +2,98 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Masking Test</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <title>Working Masking Effect</title>
     <style>
-        body { margin: 0; cursor: crosshair; overflow: hidden; }
-        #white-layer { 
-            position: fixed; 
-            inset: 0; 
-            background-color: white; 
-            z-index: 1; 
+        body { 
+            margin: 0; 
+            cursor: crosshair; 
+            overflow: hidden; 
+            font-family: serif; /* Using a basic font for the example */
+        }
+        .layer {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             display: grid;
             place-items: center;
-            font-size: 8rem;
-            font-family: sans-serif;
+            text-align: center;
+        }
+        #white-layer { 
+            background-color: white; 
+            z-index: 1; 
             color: black;
         }
         #blue-layer {
-            position: fixed;
-            inset: 0;
             background-color: #0040C0;
             z-index: 2;
+            color: white;
+            /* The CSS mask that our JavaScript will control */
             mask-image: var(--mask-url);
             -webkit-mask-image: var(--mask-url);
+        }
+        h1 {
+            font-size: 15vw; /* Responsive font size */
         }
     </style>
 </head>
 <body>
-    <div id="white-layer">Hello World</div>
-    <div id="blue-layer"></div>
+    <div id="white-layer" class="layer">
+        <h1>Hello World</h1>
+    </div>
+    <div id="blue-layer" class="layer">
+        <h1>Bye World</h1>
+    </div>
 
     <script>
-        const sketch = (p) => {
-            let maskCanvas, blueLayer;
-            p.setup = () => {
-                p.noCanvas(); // We don't need a visible p5 canvas on the page
-                blueLayer = document.getElementById('blue-layer');
-                maskCanvas = p.createGraphics(p.windowWidth, p.windowHeight);
-                maskCanvas.background(0); // Start with black mask (hides blue layer)
+        document.addEventListener('DOMContentLoaded', () => {
+            const blueLayer = document.getElementById('blue-layer');
+            
+            // Create a hidden canvas element that will serve as our mask
+            const maskCanvas = document.createElement('canvas');
+            const ctx = maskCanvas.getContext('2d');
+
+            // Function to set the mask's size and initial state
+            function resizeMask() {
+                maskCanvas.width = window.innerWidth;
+                maskCanvas.height = window.innerHeight;
+
+                // Start with a black mask. In CSS masks, black means transparent,
+                // so the blue layer will be hidden.
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
                 updateCSSMask();
-            };
-            p.mouseMoved = () => {
-                maskCanvas.fill(255); // Paint with white to reveal blue layer
-                maskCanvas.circle(p.mouseX, p.mouseY, 200);
-                updateCSSMask();
-            };
-             p.mousePressed = () => {
-                maskCanvas.background(0); // Reset mask to black on click
-                updateCSSMask();
-            };
+            }
+
+            // Function to apply our hidden canvas as a CSS mask
             function updateCSSMask() {
-                const maskUrl = `url(${maskCanvas.elt.toDataURL()})`;
+                const maskUrl = `url(${maskCanvas.toDataURL()})`;
                 blueLayer.style.setProperty('--mask-url', maskUrl);
             }
-        };
-        new p5(sketch);
+
+            // Initialize the mask
+            resizeMask();
+
+            // When the mouse moves, paint a white circle on the mask
+            window.addEventListener('mousemove', (event) => {
+                // In CSS masks, white means opaque, so this reveals the blue layer.
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(event.clientX, event.clientY, 150, 0, 2 * Math.PI);
+                ctx.fill();
+                updateCSSMask();
+            });
+            
+            // On click, reset the mask to black, hiding the blue layer
+            window.addEventListener('mousedown', () => {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+                updateCSSMask();
+            });
+
+            // Make sure the mask resizes with the window
+            window.addEventListener('resize', resizeMask);
+        });
     </script>
 </body>
 </html>
