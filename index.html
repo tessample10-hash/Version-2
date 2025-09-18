@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Working Masking Effect</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' https://unpkg.com;">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Masking Effect</title>
+    
+    <script src="https://unpkg.com/rive-canvas@2.19.1/rive.js"></script>
+    
     <style>
-        body { 
-            margin: 0; 
-            cursor: crosshair; 
-            overflow: hidden; 
-            font-family: serif; /* Using a basic font for the example */
-        }
+        body { margin: 0; cursor: crosshair; overflow: hidden; font-family: serif; }
         .layer {
             position: fixed;
             inset: 0;
@@ -28,55 +29,61 @@
             background-color: #0040C0;
             z-index: 2;
             color: white;
-            /* The CSS mask that our JavaScript will control */
             mask-image: var(--mask-url);
             -webkit-mask-image: var(--mask-url);
         }
-        h1 {
-            font-size: 15vw; /* Responsive font size */
-        }
+        h1 { font-size: 15vw; }
+        .layer canvas { margin-top: 20px; }
     </style>
 </head>
 <body>
     <div id="white-layer" class="layer">
         <h1>Hello World</h1>
+        <canvas id="rive-canvas-white" width="400" height="400"></canvas>
     </div>
+
     <div id="blue-layer" class="layer">
         <h1>Bye World</h1>
+        <canvas id="rive-canvas-blue" width="400" height="400"></canvas>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Rive animations
+            new rive.Rive({
+                src: 'assets/riv.riv', // Make sure this path is correct in your project
+                canvas: document.getElementById('rive-canvas-white'),
+                autoplay: true,
+                stateMachines: 'Button Animation',
+            });
+            new rive.Rive({
+                src: 'assets/riv.riv',
+                canvas: document.getElementById('rive-canvas-blue'),
+                autoplay: true,
+                stateMachines: 'Button Animation',
+            });
+
+            // --- Canvas Masking Logic ---
             const blueLayer = document.getElementById('blue-layer');
-            
-            // Create a hidden canvas element that will serve as our mask
             const maskCanvas = document.createElement('canvas');
             const ctx = maskCanvas.getContext('2d');
 
-            // Function to set the mask's size and initial state
             function resizeMask() {
                 maskCanvas.width = window.innerWidth;
                 maskCanvas.height = window.innerHeight;
-
-                // Start with a black mask. In CSS masks, black means transparent,
-                // so the blue layer will be hidden.
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
                 updateCSSMask();
             }
 
-            // Function to apply our hidden canvas as a CSS mask
             function updateCSSMask() {
                 const maskUrl = `url(${maskCanvas.toDataURL()})`;
                 blueLayer.style.setProperty('--mask-url', maskUrl);
             }
 
-            // Initialize the mask
             resizeMask();
 
-            // When the mouse moves, paint a white circle on the mask
             window.addEventListener('mousemove', (event) => {
-                // In CSS masks, white means opaque, so this reveals the blue layer.
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.arc(event.clientX, event.clientY, 150, 0, 2 * Math.PI);
@@ -84,14 +91,12 @@
                 updateCSSMask();
             });
             
-            // On click, reset the mask to black, hiding the blue layer
             window.addEventListener('mousedown', () => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
                 updateCSSMask();
             });
 
-            // Make sure the mask resizes with the window
             window.addEventListener('resize', resizeMask);
         });
     </script>
