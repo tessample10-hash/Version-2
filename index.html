@@ -2,101 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' https://unpkg.com;">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Masking Effect</title>
-    
-    <script src="https://unpkg.com/rive-canvas@2.19.1/rive.js"></script>
-    
+    <title>Simple Masking Effect</title>
     <style>
-        body { margin: 0; cursor: crosshair; overflow: hidden; font-family: serif; }
+        /* CSS for the layers and masking effect */
+        body {
+            margin: 0;
+            cursor: crosshair;
+            overflow: hidden; /* Prevents scrollbars */
+        }
         .layer {
             position: fixed;
-            inset: 0;
+            inset: 0; /* Makes the layer cover the entire screen */
             width: 100%;
             height: 100%;
-            display: grid;
-            place-items: center;
-            text-align: center;
         }
-        #white-layer { 
-            background-color: white; 
-            z-index: 1; 
-            color: black;
+        #white-layer {
+            background-color: white;
+            z-index: 1; /* The bottom layer */
         }
         #blue-layer {
-            background-color: #0040C0;
-            z-index: 2;
-            color: white;
+            background-color: #0040C0; /* A standard blue color */
+            z-index: 2; /* The top layer that gets masked */
+
+            /* Tells the browser to use a CSS variable for the mask image */
             mask-image: var(--mask-url);
             -webkit-mask-image: var(--mask-url);
         }
-        h1 { font-size: 15vw; }
-        .layer canvas { margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div id="white-layer" class="layer">
-        <h1>Hello World</h1>
-        <canvas id="rive-canvas-white" width="400" height="400"></canvas>
-    </div>
 
-    <div id="blue-layer" class="layer">
-        <h1>Bye World</h1>
-        <canvas id="rive-canvas-blue" width="400" height="400"></canvas>
-    </div>
+    <div id="white-layer" class="layer"></div>
+    <div id="blue-layer" class="layer"></div>
 
     <script>
+        // All the JavaScript logic for the masking effect
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Rive animations
-            new rive.Rive({
-                src: 'assets/riv.riv', // Make sure this path is correct in your project
-                canvas: document.getElementById('rive-canvas-white'),
-                autoplay: true,
-                stateMachines: 'Button Animation',
-            });
-            new rive.Rive({
-                src: 'assets/riv.riv',
-                canvas: document.getElementById('rive-canvas-blue'),
-                autoplay: true,
-                stateMachines: 'Button Animation',
-            });
-
-            // --- Canvas Masking Logic ---
             const blueLayer = document.getElementById('blue-layer');
+
+            // 1. Create a hidden canvas in memory that will act as our mask
             const maskCanvas = document.createElement('canvas');
             const ctx = maskCanvas.getContext('2d');
 
+            // 2. A function to set the mask's size and initial state
             function resizeMask() {
                 maskCanvas.width = window.innerWidth;
                 maskCanvas.height = window.innerHeight;
+
+                // Fill the mask completely black.
+                // In a CSS mask, black means "transparent," so the blue layer starts off hidden.
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
                 updateCSSMask();
             }
 
+            // 3. A function to convert our canvas drawing into a CSS mask
             function updateCSSMask() {
+                // Convert the canvas to a special image URL and apply it to the CSS variable
                 const maskUrl = `url(${maskCanvas.toDataURL()})`;
                 blueLayer.style.setProperty('--mask-url', maskUrl);
             }
 
+            // Set the initial size and state of the mask
             resizeMask();
 
+            // 4. Listen for mouse movement
             window.addEventListener('mousemove', (event) => {
+                // Paint a white circle on the mask where the cursor is.
+                // In a CSS mask, white means "opaque," which reveals the blue layer.
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
-                ctx.arc(event.clientX, event.clientY, 150, 0, 2 * Math.PI);
+                ctx.arc(event.clientX, event.clientY, 100, 0, 2 * Math.PI); // x, y, radius, startAngle, endAngle
                 ctx.fill();
-                updateCSSMask();
-            });
-            
-            window.addEventListener('mousedown', () => {
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-                updateCSSMask();
+                updateCSSMask(); // Update the CSS with the new drawing
             });
 
+            // 5. Make sure the mask resizes if the browser window changes
             window.addEventListener('resize', resizeMask);
         });
     </script>
