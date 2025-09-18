@@ -1,56 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Name | Portfolio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  
-  <script src="https://unpkg.com/rive-canvas@2.11.0/rive.js"></script>
+    <meta charset="UTF-8">
+    <title>Masking Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { margin: 0; cursor: crosshair; overflow: hidden; }
+        #white-layer { 
+            position: fixed; 
+            inset: 0; 
+            background-color: white; 
+            z-index: 1; 
+            display: grid;
+            place-items: center;
+            font-size: 8rem;
+            font-family: sans-serif;
+            color: black;
+        }
+        #blue-layer {
+            position: fixed;
+            inset: 0;
+            background-color: #0040C0;
+            z-index: 2;
+            mask-image: var(--mask-url);
+            -webkit-mask-image: var(--mask-url);
+        }
+    </style>
 </head>
 <body>
+    <div id="white-layer">Hello World</div>
+    <div id="blue-layer"></div>
 
-<header class="fade-in">
-  <div class="logo fade-in"><a href="index.html">Pallavi Singh</a></div>
-  <nav class="fade-in">
-    <ul class="fade-in">
-      <li class="active fade-in"><a href="#about">About</a></li>
-      <li class="fade-in"><a href="work.html">Work</a></li>
-      <li class="fade-in"><a href="#learning">Observations</a></li>
-      <li class="fade-in"><a href="#contact">Contact</a></li>
-    </ul>
-  </nav>
-</header>
-
-<div class="content fade-in">
-    </div>
-
-<div id="scroll-progress-container" class="fade-in">
-  <div id="scroll-progress" class="fade-in"></div>
-</div>
-<div class="blue-layer">
-  <div class="blue-content">
-    <h1>The Hidden Layer</h1>
-    <p>
-      This is some sample text sitting beneath the white mask.  
-      Move your cursor to uncover it gradually.
-    </p>
-  </div>
-</div>
-
-<canvas id="rive-canvas"></canvas>
-
-<canvas></canvas> <script src="sketch.js"></script>
-<script src="script.js"></script>
-<script src="fadein.js"></script>
-
-<script src="rive-animation.js"></script> 
+    <script>
+        const sketch = (p) => {
+            let maskCanvas, blueLayer;
+            p.setup = () => {
+                p.noCanvas(); // We don't need a visible p5 canvas on the page
+                blueLayer = document.getElementById('blue-layer');
+                maskCanvas = p.createGraphics(p.windowWidth, p.windowHeight);
+                maskCanvas.background(0); // Start with black mask (hides blue layer)
+                updateCSSMask();
+            };
+            p.mouseMoved = () => {
+                maskCanvas.fill(255); // Paint with white to reveal blue layer
+                maskCanvas.circle(p.mouseX, p.mouseY, 200);
+                updateCSSMask();
+            };
+             p.mousePressed = () => {
+                maskCanvas.background(0); // Reset mask to black on click
+                updateCSSMask();
+            };
+            function updateCSSMask() {
+                const maskUrl = `url(${maskCanvas.elt.toDataURL()})`;
+                blueLayer.style.setProperty('--mask-url', maskUrl);
+            }
+        };
+        new p5(sketch);
+    </script>
 </body>
 </html>
